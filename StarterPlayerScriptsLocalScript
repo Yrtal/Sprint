@@ -1,0 +1,120 @@
+
+-- Yrtal | Sprint System
+-- Location: StarterPlayer > StarterPlayerScripts
+
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+
+local NORMAL_SPEED = 16
+local SPRINT_SPEED = 26
+
+local humanoid
+local keyboardSprinting = false
+local gamepadSprinting = false
+local touchSprinting = false
+
+local function updateSpeed()
+	if not humanoid then
+		return
+	end
+
+	local sprinting =
+		keyboardSprinting
+		or gamepadSprinting
+		or touchSprinting
+
+	humanoid.WalkSpeed = sprinting
+		and SPRINT_SPEED
+		or NORMAL_SPEED
+end
+
+local function onCharacterAdded(character)
+	humanoid = character:WaitForChild("Humanoid")
+
+	keyboardSprinting = false
+	gamepadSprinting = false
+	touchSprinting = false
+
+	updateSpeed()
+end
+
+player.CharacterAdded:Connect(onCharacterAdded)
+
+if player.Character then
+	onCharacterAdded(player.Character)
+end
+
+-- Keyboard and gamepad controls
+UserInputService.InputBegan:Connect(function(input, processed)
+	if processed then
+		return
+	end
+
+	if input.KeyCode == Enum.KeyCode.LeftShift
+		or input.KeyCode == Enum.KeyCode.RightShift then
+		keyboardSprinting = true
+		updateSpeed()
+
+	elseif input.KeyCode == Enum.KeyCode.ButtonL3 then
+		gamepadSprinting = true
+		updateSpeed()
+	end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+	if input.KeyCode == Enum.KeyCode.LeftShift
+		or input.KeyCode == Enum.KeyCode.RightShift then
+		keyboardSprinting = false
+		updateSpeed()
+
+	elseif input.KeyCode == Enum.KeyCode.ButtonL3 then
+		gamepadSprinting = false
+		updateSpeed()
+	end
+
+	if input.UserInputType == Enum.UserInputType.Touch then
+		touchSprinting = false
+		updateSpeed()
+	end
+end)
+
+-- Create a sprint button for touch devices
+if UserInputService.TouchEnabled then
+	local screenGui = Instance.new("ScreenGui")
+	screenGui.Name = "YrtalSprintGui"
+	screenGui.ResetOnSpawn = false
+	screenGui.Parent = player:WaitForChild("PlayerGui")
+
+	local button = Instance.new("TextButton")
+	button.Name = "SprintButton"
+	button.Size = UDim2.fromOffset(120, 55)
+	button.Position = UDim2.new(1, -145, 1, -170)
+	button.BackgroundColor3 = Color3.fromRGB(115, 65, 255)
+	button.TextColor3 = Color3.new(1, 1, 1)
+	button.Text = "SPRINT"
+	button.TextSize = 20
+	button.Font = Enum.Font.GothamBold
+	button.Parent = screenGui
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 14)
+	corner.Parent = button
+
+	button.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.Touch
+			or input.UserInputType == Enum.UserInputType.MouseButton1 then
+			touchSprinting = true
+			updateSpeed()
+		end
+	end)
+
+	button.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.Touch
+			or input.UserInputType == Enum.UserInputType.MouseButton1 then
+			touchSprinting = false
+			updateSpeed()
+		end
+	end)
+end
